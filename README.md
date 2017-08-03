@@ -1,6 +1,8 @@
 # Purescript-ChocoPie
 
-A Cycle.js-like utility for working with Purescript-Behaviors Events.
+A Cycle.js-like utility for working with Purescript-Behaviors Events. Aptly named for a circular Korean snack food.
+
+![](http://i.imgur.com/uNCB4qp.jpg)
 
 ## Usage
 
