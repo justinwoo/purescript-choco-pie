@@ -3,7 +3,6 @@ module ChocoPie where
 import Prelude
 
 import Control.Monad.Eff (Eff, kind Effect)
-import Control.Monad.Eff.Unsafe (unsafeCoerceEff)
 import Data.Record (delete, get, insert)
 import Data.Symbol (class IsSymbol, SProxy(..))
 import FRP (FRP)
@@ -46,7 +45,7 @@ instance chocoPieRecord ::
   ) => ChocoPieRecord e sourceRow sinkRow driverRow bundleRow where
   chocoPieItUp main drivers = do
     sinkProxies <- makeSinkProxies sinkListP bundleListP sinkRowP
-    sources <- unsafeCoerceEff $ callDrivers
+    sources <- callDrivers
       driverListP bundleListP sourceListP
       drivers sinkProxies
     let
@@ -105,7 +104,7 @@ class CallDrivers (e :: # Effect)
     -> RLProxy sourceList
     -> Record driver
     -> Record bundle
-    -> Eff e (Record source)
+    -> Eff (frp :: FRP | e) (Record source)
 
 instance callDriversCons ::
   ( IsSymbol name
@@ -117,7 +116,7 @@ instance callDriversCons ::
       bundleTail bundleTailRow
       sourceTail sourceTailRow
   , TypeEquals bundleton { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit }
-  , TypeEquals driverton (Event a -> Eff e b)
+  , TypeEquals driverton (Event a -> Eff (frp :: FRP | e) b)
   , RowLacks name driverTailRow
   , RowCons name driverton driverTailRow driverRow
   , RowLacks name bundleTailRow
@@ -143,10 +142,10 @@ instance callDriversCons ::
       bundleton = to $ get nameP bundles
       event :: Event a
       event = bundleton.event
-      driver :: (Event a -> Eff e b)
+      driver :: (Event a -> Eff (frp :: FRP | e) b)
       driver = to $ get nameP drivers
-      getSource :: Eff e b
-      getSource = driver event
+      getSource :: Eff (frp :: FRP | e) b
+      getSource = to $ driver event
       drivers' :: Record driverTailRow
       drivers' = delete nameP drivers
       bundles' :: Record bundleTailRow
@@ -206,18 +205,19 @@ class ChocoPieRowList (e :: # Effect)
   (sinkList :: RowList)
   (driverList :: RowList)
   (bundleList :: RowList)
-  | sourceList -> sinkList driverList bundleList
-  , sinkList -> sourceList driverList bundleList
-  , driverList -> sourceList sinkList bundleList
-  , bundleList -> sourceList sinkList driverList
+  | sourceList -> sinkList driverList bundleList e
+  , sinkList -> sourceList driverList bundleList e
+  , driverList -> sourceList sinkList bundleList e
+  , bundleList -> sourceList sinkList driverList e
 
 instance chocoPieRowListCons ::
   ( ChocoPieRowList e sourceTail sinkTail driverTail bundleTail
+  , TypeEquals driver ((Event a) -> Eff (frp :: FRP | e) b)
   , TypeEquals c { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
   ) => ChocoPieRowList e
     (Cons k b sourceTail)
     (Cons k (Event a) sinkTail)
-    (Cons k ((Event a) -> Eff e b) driverTail)
+    (Cons k driver driverTail)
     (Cons k c bundleTail)
 
 instance chocoPieRowListNil :: ChocoPieRowList e Nil Nil Nil Nil
