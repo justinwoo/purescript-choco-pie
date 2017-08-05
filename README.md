@@ -1,5 +1,7 @@
 # Purescript-ChocoPie
 
+[![Build Status](https://travis-ci.org/justinwoo/purescript-choco-pie.svg?branch=master)](https://travis-ci.org/justinwoo/purescript-choco-pie)
+
 A Cycle.js-like utility for working with Purescript-Behaviors Events. Aptly named for a circular Korean snack food.
 
 ![](http://i.imgur.com/uNCB4qp.jpg)
