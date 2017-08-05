@@ -1,5 +1,10 @@
 {
   "name": "purescript-choco-pie",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/justinwoo/purescript-chocopie.git"
+  },
   "ignore": [
     "**/.*",
     "node_modules",
