@@ -37,7 +37,7 @@ With appropriate context and individual annotations, the type signature annotati
 
 ## Usage Exmples
 
-I rewrote some code in my [simple-rpc-telegram-bot](https://github.com/justinwoo/simple-rpc-telegram-bot/blob/7ebdce679eba0eb4462d14d3a6e51d1ba245aa6f/src/Main.purs#L126) repo, where I have drivers for running a child process, receiving and sending messages from Telegram, and a timer that ticks for every hour.
+I rewrote some code in my [simple-rpc-telegram-bot](https://github.com/justinwoo/simple-rpc-telegram-bot/blob/6410ac4dd3baa20bc15229d48ebc8dfce5bc6b19/src/Main.purs#L169) repo, where I have drivers for running a child process, receiving and sending messages from Telegram, and a timer that ticks for every hour.
 
 ```purs
 
@@ -63,7 +63,7 @@ main' sources =
   , timer :: Event Unit -> Eff e (Event Request)
   }
 
-drivers :: forall e. Config -> Drivers (infinity :: INFINITY | e)
+drivers :: -- ...
 drivers
   { token
   , torscraperPath
