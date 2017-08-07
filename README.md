@@ -57,10 +57,10 @@ main' sources =
   , timer: mempty
   }
  
- type Drivers e =
-  { torscraper :: Event Request -> Eff e (Event Result)
-  , bot :: Event Result -> Eff e (Event Request)
-  , timer :: Event Unit -> Eff e (Event Request)
+ type Drivers e1 e2 e3 =
+  { torscraper :: Event Request -> Eff e1 (Event Result)
+  , bot :: Event Result -> Eff e2 (Event Request)
+  , timer :: Event Unit -> Eff e3 (Event Request)
   }
 
 drivers :: -- ...
