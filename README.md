@@ -85,3 +85,5 @@ drivers
 
 -- runChocoPie main' (drivers config)
 ```
+
+I also have a simpler example in [atarime-purescript](https://github.com/justinwoo/atarime-purescript/blob/77b204a34bac95554a86aa4de1a9c36b3e22f1a0/src/Main.purs#L50) for similar usage of this library.
