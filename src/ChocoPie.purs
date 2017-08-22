@@ -3,12 +3,12 @@ module ChocoPie where
 import Prelude
 
 import Control.Monad.Eff (Eff, kind Effect)
-import Data.Record (delete, get, insert)
+import Data.Record (get, insert)
 import Data.Symbol (class IsSymbol, SProxy(..))
 import FRP (FRP)
 import FRP.Event (Event, create, subscribe)
 import Type.Equality (class TypeEquals, from, to)
-import Type.Row (class ListToRow, class RowLacks, class RowToList, Cons, Nil, RLProxy(..), RProxy(..), kind RowList)
+import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(RLProxy), RProxy(RProxy), kind RowList)
 
 runChocoPie :: forall bundleRow driverRow sinkRow sourceRow eff
    . ChocoPieRecord eff sourceRow sinkRow driverRow bundleRow
@@ -19,11 +19,12 @@ runChocoPie :: forall bundleRow driverRow sinkRow sourceRow eff
        Unit
 runChocoPie = chocoPieItUp
 
-class ChocoPieRecord (e :: # Effect) (sourceRow :: # Type) (sinkRow :: # Type) (driverRow :: # Type) (bundleRow :: # Type)
-  | sourceRow -> sinkRow driverRow bundleRow
-  , sinkRow -> sourceRow driverRow bundleRow
-  , driverRow -> sourceRow sinkRow bundleRow
-  , bundleRow -> sourceRow sinkRow driverRow  where
+class ChocoPieRecord (e :: # Effect)
+  (sourceRow :: # Type)
+  (sinkRow :: # Type)
+  (driverRow :: # Type)
+  (bundleRow :: # Type)
+  | e -> sourceRow sinkRow driverRow bundleRow e where
   chocoPieItUp ::
        (Record sourceRow -> Record sinkRow)
     -> (Record driverRow)
@@ -38,10 +39,6 @@ instance chocoPieRecord ::
   , MakeSinkProxies e sinkList sinkRow bundleList bundleRow
   , CallDrivers e driverList driverRow bundleList bundleRow sourceList sourceRow
   , ReplicateMany e sinkList sinkRow bundleList bundleRow
-  , ListToRow sourceList sourceRow
-  , ListToRow sinkList sinkRow
-  , ListToRow driverList driverRow
-  , ListToRow bundleList bundleRow
   ) => ChocoPieRecord e sourceRow sinkRow driverRow bundleRow where
   chocoPieItUp main drivers = do
     sinkProxies <- makeSinkProxies sinkListP bundleListP sinkRowP
@@ -108,19 +105,14 @@ class CallDrivers (e :: # Effect)
 
 instance callDriversCons ::
   ( IsSymbol name
-  , ListToRow driverTail driverTailRow
-  , ListToRow bundleTail bundleTailRow
-  , ListToRow sourceTail sourceTailRow
   , CallDrivers e
-      driverTail driverTailRow
-      bundleTail bundleTailRow
+      driverTail driverRow
+      bundleTail bundleRow
       sourceTail sourceTailRow
   , TypeEquals bundleton { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit }
   , TypeEquals driverton (Event a -> Eff (frp :: FRP | e) b)
-  , RowLacks name driverTailRow
-  , RowCons name driverton driverTailRow driverRow
-  , RowLacks name bundleTailRow
-  , RowCons name bundleton bundleTailRow bundleRow
+  , RowCons name driverton trash1 driverRow
+  , RowCons name bundleton trash2 bundleRow
   , RowLacks name sourceTailRow
   , RowCons name b sourceTailRow sourceRow
   ) => CallDrivers e
@@ -132,8 +124,8 @@ instance callDriversCons ::
       (RLProxy :: RLProxy driverTail)
       (RLProxy :: RLProxy bundleTail)
       (RLProxy :: RLProxy sourceTail)
-      drivers'
-      bundles'
+      drivers
+      bundles
     source <- getSource
     pure $ insert nameP source rest :: Record sourceRow
     where
@@ -146,10 +138,6 @@ instance callDriversCons ::
       driver = to $ get nameP drivers
       getSource :: Eff (frp :: FRP | e) b
       getSource = to $ driver event
-      drivers' :: Record driverTailRow
-      drivers' = delete nameP drivers
-      bundles' :: Record bundleTailRow
-      bundles' = delete nameP bundles
 
 instance callDriversNil ::
   ( TypeEquals (Record source) {}
@@ -173,29 +161,20 @@ instance replicateManyCons ::
   , TypeEquals bundleton { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
   , RowCons name (Event a) sinkTailRow sinkRow
   , RowCons name bundleton bundleTailRow bundleRow
-  , ReplicateMany e sinkTail sinkTailRow bundleTail bundleTailRow
-  , RowLacks name sinkTailRow
-  , RowCons name (Event a) sinkTailRow sinkRow
-  , RowLacks name bundleTailRow
-  , RowCons name bundleton bundleTailRow bundleRow
+  , ReplicateMany e sinkTail sinkRow bundleTail bundleRow
   ) => ReplicateMany e
     (Cons name (Event a) sinkTail) sinkRow
     (Cons name bundleton bundleTail) bundleRow where
   replicateMany _ _ sinks bundles = do
     subscribe sink bundle.push
-    replicateMany sinkTailRowP bundleTailRowP sinks' bundles'
+    replicateMany sinkTailRowP bundleTailRowP sinks bundles
     where
       nameP = SProxy :: SProxy name
-      sink :: Event a
       sink = get nameP sinks
       bundle :: { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
       bundle = to $ get nameP bundles
       sinkTailRowP = RLProxy :: RLProxy sinkTail
-      sinks' :: Record sinkTailRow
-      sinks' = delete nameP sinks
       bundleTailRowP = RLProxy :: RLProxy bundleTail
-      bundles' :: Record bundleTailRow
-      bundles' = delete nameP bundles
 
 instance replicateManyNil :: ReplicateMany e Nil sinkRow Nil bundleRow where
   replicateMany _ _ _ _ = pure unit
