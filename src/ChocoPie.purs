@@ -19,11 +19,12 @@ runChocoPie :: forall bundleRow driverRow sinkRow sourceRow eff
        Unit
 runChocoPie = chocoPieItUp
 
-class ChocoPieRecord (e :: # Effect) (sourceRow :: # Type) (sinkRow :: # Type) (driverRow :: # Type) (bundleRow :: # Type)
-  | sourceRow -> sinkRow driverRow bundleRow
-  , sinkRow -> sourceRow driverRow bundleRow
-  , driverRow -> sourceRow sinkRow bundleRow
-  , bundleRow -> sourceRow sinkRow driverRow  where
+class ChocoPieRecord (e :: # Effect)
+  (sourceRow :: # Type)
+  (sinkRow :: # Type)
+  (driverRow :: # Type)
+  (bundleRow :: # Type)
+  | e -> sourceRow sinkRow driverRow bundleRow e where
   chocoPieItUp ::
        (Record sourceRow -> Record sinkRow)
     -> (Record driverRow)
