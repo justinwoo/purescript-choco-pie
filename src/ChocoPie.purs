@@ -24,7 +24,7 @@ class ChocoPieRecord (e :: # Effect)
   (sinkRow :: # Type)
   (driverRow :: # Type)
   (bundleRow :: # Type)
-  | e -> sourceRow sinkRow driverRow bundleRow e where
+  | e -> sourceRow sinkRow driverRow bundleRow where
   chocoPieItUp ::
        (Record sourceRow -> Record sinkRow)
     -> (Record driverRow)
@@ -57,14 +57,14 @@ instance chocoPieRecord ::
       sinkRowP = RProxy :: RProxy sinkRow
 
 class MakeSinkProxies (e :: # Effect)
-  (xs :: RowList) (row :: # Type)
+  (sinkList :: RowList) (sinks :: # Type)
   (bundleList :: RowList) (bundles :: # Type)
-  | xs -> row
+  | sinkList -> sinks
   , bundleList -> bundles where
   makeSinkProxies ::
-       RLProxy xs
+       RLProxy sinkList
     -> RLProxy bundleList
-    -> RProxy row
+    -> RProxy sinks
     -> Eff (frp :: FRP | e) (Record bundles)
 
 instance makeSinkProxiesCons ::
@@ -92,9 +92,9 @@ class CallDrivers (e :: # Effect)
   (driverList :: RowList) (driver :: # Type)
   (bundleList :: RowList) (bundle :: # Type)
   (sourceList :: RowList) (source :: # Type)
-  | driverList -> driver bundleList sourceList e
-  , bundleList -> bundle driverList sourceList e
-  , sourceList -> source driverList bundleList e where
+  | driverList -> driver bundleList sourceList
+  , bundleList -> bundle driverList sourceList
+  , sourceList -> source driverList bundleList where
   callDrivers ::
        RLProxy driverList
     -> RLProxy bundleList
@@ -147,8 +147,8 @@ instance callDriversNil ::
 class ReplicateMany (e :: # Effect)
   (sinkList :: RowList) (sinkRow :: # Type)
   (bundleList :: RowList) (bundleRow :: # Type)
-  | sinkList -> sinkRow e
-  , bundleList -> bundleRow e where
+  | sinkList -> sinkRow
+  , bundleList -> bundleRow where
   replicateMany ::
        RLProxy sinkList
     -> RLProxy bundleList
@@ -184,10 +184,10 @@ class ChocoPieRowList (e :: # Effect)
   (sinkList :: RowList)
   (driverList :: RowList)
   (bundleList :: RowList)
-  | sourceList -> sinkList driverList bundleList e
-  , sinkList -> sourceList driverList bundleList e
-  , driverList -> sourceList sinkList bundleList e
-  , bundleList -> sourceList sinkList driverList e
+  | sourceList -> sinkList driverList bundleList
+  , sinkList -> sourceList driverList bundleList
+  , driverList -> sourceList sinkList bundleList
+  , bundleList -> sourceList sinkList driverList
 
 instance chocoPieRowListCons ::
   ( ChocoPieRowList e sourceTail sinkTail driverTail bundleTail
