@@ -166,7 +166,7 @@ instance replicateManyCons ::
     (Cons name (Event a) sinkTail) sinkRow
     (Cons name bundleton bundleTail) bundleRow where
   replicateMany _ _ sinks bundles = do
-    subscribe sink bundle.push
+    _ <- subscribe sink bundle.push
     replicateMany sinkTailRowP bundleTailRowP sinks bundles
     where
       nameP = SProxy :: SProxy name

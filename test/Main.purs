@@ -7,22 +7,19 @@ import Control.Monad.Aff (makeAff)
 import Control.Monad.Aff.AVar (AVAR)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
-import Control.Monad.Eff.Timer (TIMER)
 import Data.Monoid (mempty)
 import FRP (FRP)
 import FRP.Event (Event, subscribe)
-import Node.Process (PROCESS)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
-import Test.Spec.Runner (run)
+import Test.Spec.Runner (PROCESS, run)
 
 type MyEffects e =
   ( console :: CONSOLE
-  , timer :: TIMER
   , avar :: AVAR
-  , process :: PROCESS
   , frp :: FRP
+    , process :: PROCESS
   | e
   )
 
@@ -38,7 +35,7 @@ main = run [consoleReporter] do
 
   where
     program =
-      makeAff \e s -> do
+      makeAff \cb -> do
       let
         drivers ::
           { a :: Event Unit -> Eff (MyEffects e) (Event Int)
@@ -47,11 +44,12 @@ main = run [consoleReporter] do
         drivers =
           { a: const $ pure $ pure 1
           , b: \events ->
-              subscribe events \n -> do
+              void $ subscribe events \n -> do
                 logShow n
-                s n -- easy way out to make program terminate
+                cb $ pure n -- easy way out to make program terminate
           }
       runChocoPie main' drivers
+      pure mempty
     main' ::
       { a :: Event Int
       , b :: Unit
@@ -103,5 +101,5 @@ program' = runChocoPie main' drivers
       }
     drivers =
       { a: const $ pure (pure 1)
-      , b: \events -> subscribe events logShow
+      , b: \events -> void $ subscribe events logShow
       }
