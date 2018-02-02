@@ -1,0 +1,11 @@
+{
+  "name": "purescript-choco-pie",
+  "set": "effect",
+  "source": "https://github.com/justinwoo/package-sets.git",
+  "depends": [
+    "record",
+    "typelevel-prelude",
+    "behaviors",
+    "prelude"
+  ]
+}
