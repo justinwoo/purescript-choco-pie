@@ -2,44 +2,44 @@ module ChocoPie where
 
 import Prelude
 
-import Control.Monad.Eff (Eff, kind Effect)
-import Data.Record (get, insert)
 import Data.Symbol (class IsSymbol, SProxy(..))
-import FRP (FRP)
+import Effect (Effect)
 import FRP.Event (Event, create, subscribe)
+import Prim.Row as Row
+import Prim.RowList (class RowToList, Cons, Nil, kind RowList)
+import Record as Record
 import Type.Equality (class TypeEquals, from, to)
-import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(RLProxy), RProxy(RProxy), kind RowList)
+import Type.Row (RLProxy(RLProxy), RProxy(RProxy))
 
-runChocoPie :: forall bundleRow driverRow sinkRow sourceRow eff
-   . ChocoPieRecord eff sourceRow sinkRow driverRow bundleRow
+runChocoPie :: forall bundleRow driverRow sinkRow sourceRow
+   . ChocoPieRecord  sourceRow sinkRow driverRow bundleRow
   => (Record sourceRow -> Record sinkRow)
   -> Record driverRow
-  -> Eff
-       (frp :: FRP | eff)
-       Unit
+  -> Effect Unit
 runChocoPie = chocoPieItUp
 
-class ChocoPieRecord (e :: # Effect)
+class ChocoPieRecord
   (sourceRow :: # Type)
   (sinkRow :: # Type)
   (driverRow :: # Type)
   (bundleRow :: # Type)
-  | e -> sourceRow sinkRow driverRow bundleRow where
+  | sourceRow -> sinkRow driverRow bundleRow
+  where
   chocoPieItUp ::
        (Record sourceRow -> Record sinkRow)
     -> (Record driverRow)
-    -> Eff (frp :: FRP | e) Unit
+    -> Effect Unit
 
 instance chocoPieRecord ::
   ( RowToList sourceRow sourceList
   , RowToList sinkRow sinkList
   , RowToList driverRow driverList
   , RowToList bundleRow bundleList
-  , ChocoPieRowList e sourceList sinkList driverList bundleList
-  , MakeSinkProxies e sinkList sinkRow bundleList bundleRow
-  , CallDrivers e driverList driverRow bundleList bundleRow sourceList sourceRow
-  , ReplicateMany e sinkList sinkRow bundleList bundleRow
-  ) => ChocoPieRecord e sourceRow sinkRow driverRow bundleRow where
+  , ChocoPieRowList sourceList sinkList driverList bundleList
+  , MakeSinkProxies sinkList sinkRow bundleList bundleRow
+  , CallDrivers driverList driverRow bundleList bundleRow sourceList sourceRow
+  , ReplicateMany sinkList sinkRow bundleList bundleRow
+  ) => ChocoPieRecord sourceRow sinkRow driverRow bundleRow where
   chocoPieItUp main drivers = do
     sinkProxies <- makeSinkProxies sinkListP bundleListP sinkRowP
     sources <- callDrivers
@@ -56,7 +56,7 @@ instance chocoPieRecord ::
       sourceListP = RLProxy :: RLProxy sourceList
       sinkRowP = RProxy :: RProxy sinkRow
 
-class MakeSinkProxies (e :: # Effect)
+class MakeSinkProxies
   (sinkList :: RowList) (sinks :: # Type)
   (bundleList :: RowList) (bundles :: # Type)
   | sinkList -> sinks
@@ -65,30 +65,30 @@ class MakeSinkProxies (e :: # Effect)
        RLProxy sinkList
     -> RLProxy bundleList
     -> RProxy sinks
-    -> Eff (frp :: FRP | e) (Record bundles)
+    -> Effect (Record bundles)
 
 instance makeSinkProxiesCons ::
   ( IsSymbol name
-  , MakeSinkProxies e tail tailRow bundleList bundles'
-  , RowLacks name bundles'
-  , RowCons name { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit } bundles' bundles
-  ) => MakeSinkProxies e (Cons name (Event a) tail) row bundleList bundles where
+  , MakeSinkProxies tail tailRow bundleList bundles'
+  , Row.Lacks name bundles'
+  , Row.Cons name { event :: Event a, push :: a -> Effect Unit } bundles' bundles
+  ) => MakeSinkProxies (Cons name (Event a) tail) row bundleList bundles where
   makeSinkProxies _ _ _ = do
     bundle <- create
     rest <- makeSinkProxies
       (RLProxy :: RLProxy tail)
       (RLProxy :: RLProxy bundleList)
       (RProxy :: RProxy tailRow)
-    pure $ insert nameP bundle rest
+    pure $ Record.insert nameP bundle rest
     where
       nameP = SProxy :: SProxy name
 
 instance makeSinkProxiesNil ::
   ( TypeEquals (Record bundle) {}
-  ) => MakeSinkProxies e Nil row bundleList bundle where
+  ) => MakeSinkProxies Nil row bundleList bundle where
   makeSinkProxies _ _ _ = pure $ from {}
 
-class CallDrivers (e :: # Effect)
+class CallDrivers
   (driverList :: RowList) (driver :: # Type)
   (bundleList :: RowList) (bundle :: # Type)
   (sourceList :: RowList) (source :: # Type)
@@ -101,21 +101,21 @@ class CallDrivers (e :: # Effect)
     -> RLProxy sourceList
     -> Record driver
     -> Record bundle
-    -> Eff (frp :: FRP | e) (Record source)
+    -> Effect (Record source)
 
 instance callDriversCons ::
   ( IsSymbol name
-  , CallDrivers e
+  , CallDrivers
       driverTail driverRow
       bundleTail bundleRow
       sourceTail sourceTailRow
-  , TypeEquals bundleton { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit }
-  , TypeEquals driverton (Event a -> Eff (frp :: FRP | e) b)
-  , RowCons name driverton trash1 driverRow
-  , RowCons name bundleton trash2 bundleRow
-  , RowLacks name sourceTailRow
-  , RowCons name b sourceTailRow sourceRow
-  ) => CallDrivers e
+  , TypeEquals bundleton { event :: Event a, push :: a -> Effect Unit }
+  , TypeEquals driverton (Event a -> Effect b)
+  , Row.Cons name driverton trash1 driverRow
+  , Row.Cons name bundleton trash2 bundleRow
+  , Row.Lacks name sourceTailRow
+  , Row.Cons name b sourceTailRow sourceRow
+  ) => CallDrivers
     (Cons name driverton driverTail) driverRow
     (Cons name bundleton bundleTail) bundleRow
     (Cons name b sourceTail) sourceRow where
@@ -127,24 +127,24 @@ instance callDriversCons ::
       drivers
       bundles
     source <- getSource
-    pure $ insert nameP source rest :: Record sourceRow
+    pure $ Record.insert nameP source rest :: Record sourceRow
     where
       nameP = SProxy :: SProxy name
-      bundleton :: { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit }
-      bundleton = to $ get nameP bundles
+      bundleton :: { event :: Event a, push :: a -> Effect Unit }
+      bundleton = to $ Record.get nameP bundles
       event :: Event a
       event = bundleton.event
-      driver :: (Event a -> Eff (frp :: FRP | e) b)
-      driver = to $ get nameP drivers
-      getSource :: Eff (frp :: FRP | e) b
+      driver :: (Event a -> Effect b)
+      driver = to $ Record.get nameP drivers
+      getSource :: Effect b
       getSource = to $ driver event
 
 instance callDriversNil ::
   ( TypeEquals (Record source) {}
-  ) => CallDrivers e Nil driver Nil bundle Nil source where
+  ) => CallDrivers Nil driver Nil bundle Nil source where
   callDrivers _ _ _ _ _ = pure $ from {}
 
-class ReplicateMany (e :: # Effect)
+class ReplicateMany
   (sinkList :: RowList) (sinkRow :: # Type)
   (bundleList :: RowList) (bundleRow :: # Type)
   | sinkList -> sinkRow
@@ -154,15 +154,15 @@ class ReplicateMany (e :: # Effect)
     -> RLProxy bundleList
     -> Record sinkRow
     -> Record bundleRow
-    -> Eff (frp :: FRP | e) Unit
+    -> Effect Unit
 
 instance replicateManyCons ::
   ( IsSymbol name
-  , TypeEquals bundleton { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
-  , RowCons name (Event a) sinkTailRow sinkRow
-  , RowCons name bundleton bundleTailRow bundleRow
-  , ReplicateMany e sinkTail sinkRow bundleTail bundleRow
-  ) => ReplicateMany e
+  , TypeEquals bundleton { event :: Event a, push :: a -> Effect Unit}
+  , Row.Cons name (Event a) sinkTailRow sinkRow
+  , Row.Cons name bundleton bundleTailRow bundleRow
+  , ReplicateMany sinkTail sinkRow bundleTail bundleRow
+  ) => ReplicateMany
     (Cons name (Event a) sinkTail) sinkRow
     (Cons name bundleton bundleTail) bundleRow where
   replicateMany _ _ sinks bundles = do
@@ -170,16 +170,16 @@ instance replicateManyCons ::
     replicateMany sinkTailRowP bundleTailRowP sinks bundles
     where
       nameP = SProxy :: SProxy name
-      sink = get nameP sinks
-      bundle :: { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
-      bundle = to $ get nameP bundles
+      sink = Record.get nameP sinks
+      bundle :: { event :: Event a, push :: a -> Effect Unit}
+      bundle = to $ Record.get nameP bundles
       sinkTailRowP = RLProxy :: RLProxy sinkTail
       bundleTailRowP = RLProxy :: RLProxy bundleTail
 
-instance replicateManyNil :: ReplicateMany e Nil sinkRow Nil bundleRow where
+instance replicateManyNil :: ReplicateMany Nil sinkRow Nil bundleRow where
   replicateMany _ _ _ _ = pure unit
 
-class ChocoPieRowList (e :: # Effect)
+class ChocoPieRowList
   (sourceList :: RowList)
   (sinkList :: RowList)
   (driverList :: RowList)
@@ -190,13 +190,13 @@ class ChocoPieRowList (e :: # Effect)
   , bundleList -> sourceList sinkList driverList
 
 instance chocoPieRowListCons ::
-  ( ChocoPieRowList e sourceTail sinkTail driverTail bundleTail
-  , TypeEquals driver ((Event a) -> Eff (frp :: FRP | e) b)
-  , TypeEquals c { event :: Event a, push :: a -> Eff (frp :: FRP | e) Unit}
-  ) => ChocoPieRowList e
+  ( ChocoPieRowList sourceTail sinkTail driverTail bundleTail
+  , TypeEquals driver ((Event a) -> Effect b)
+  , TypeEquals c { event :: Event a, push :: a -> Effect Unit}
+  ) => ChocoPieRowList
     (Cons k b sourceTail)
     (Cons k (Event a) sinkTail)
     (Cons k driver driverTail)
     (Cons k c bundleTail)
 
-instance chocoPieRowListNil :: ChocoPieRowList e Nil Nil Nil Nil
+instance chocoPieRowListNil :: ChocoPieRowList Nil Nil Nil Nil
