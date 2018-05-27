@@ -6,6 +6,7 @@ import ChocoPie (runChocoPie)
 import Effect (Effect)
 import Effect.Console (logShow)
 import FRP.Event (Event, subscribe)
+import Test.Assert (assert)
 
 main :: Effect Unit
 main = do
@@ -19,6 +20,7 @@ main = do
           { a: const $ pure $ pure 1
           , b: \events ->
               void $ subscribe events \n -> do
+                assert $ n == 1
                 logShow n
           }
       runChocoPie main' drivers

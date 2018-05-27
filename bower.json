@@ -12,12 +12,12 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "#compiler/0.12",
-    "purescript-behaviors": "justinwoo/purescript-behaviors#compiler/0.12",
-    "purescript-typelevel-prelude": "#compiler/0.12",
-    "purescript-record": "#compiler/0.12"
+    "purescript-prelude": "^4.0.1",
+    "purescript-typelevel-prelude": "^3.0.0",
+    "purescript-record": "^1.0.0",
+    "purescript-event": "^1.0.0"
   },
   "devDependencies": {
-    "purescript-spec": "justinwoo/purescript-spec#compiler/0.12"
+    "purescript-assert": "^4.0.0"
   }
 }
