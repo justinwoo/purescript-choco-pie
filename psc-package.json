@@ -1,7 +1,7 @@
 {
   "name": "purescript-choco-pie",
-  "set": "compiler/0.12",
-  "source": "https://github.com/justinwoo/package-sets.git",
+  "set": "180718",
+  "source": "https://github.com/justinwoo/spacchetti.git",
   "depends": [
     "console",
     "behaviors",
