@@ -42,7 +42,6 @@ With appropriate context and individual annotations, the type signature annotati
 I rewrote some code in my [simple-rpc-telegram-bot](https://github.com/justinwoo/simple-rpc-telegram-bot/blob/6410ac4dd3baa20bc15229d48ebc8dfce5bc6b19/src/Main.purs#L169) repo, where I have drivers for running a child process, receiving and sending messages from Telegram, and a timer that ticks for every hour.
 
 ```purs
-
 type Main
    = { torscraper :: Event Result
      , bot :: Event Request
@@ -58,14 +57,13 @@ main' sources =
   , bot: sources.torscraper
   , timer: mempty
   }
- 
- type Drivers e1 e2 e3 =
-  { torscraper :: Event Request -> Eff e1 (Event Result)
-  , bot :: Event Result -> Eff e2 (Event Request)
-  , timer :: Event Unit -> Eff e3 (Event Request)
-  }
 
-drivers :: -- ...
+drivers
+  :: Config
+  -> { torscraper :: Event Request -> Effect (Event Result)
+     , bot :: Event Result -> Effect (Event Request)
+     , timer :: Event Unit -> Effect (Event Request)
+     }
 drivers
   { token
   , torscraperPath
@@ -76,12 +74,19 @@ drivers
   , timer
   }
   where
-    torscraper requests = -- ...
-    
-    bot results = -- ...
+    torscraper requests = do
+      { event, push } <- create
+      _ <- subscribe requests $ handleTorscraper torscraperPath master push
+      pure event
+
+    bot results = do
+      connection <- connect $ unwrap token
+      _ <- subscribe results $ sendMessage' connection
+      messages <- getMessages connection
+      pure $ { origin: FromUser, id: master } <$ messages
 
     timer _
-      | tick <- pure 0 <|> interval (60 * 60 * 1000)
+      | tick <- pure unit <|> unit <$ interval (60 * 60 * 1000)
       , reqs <- { origin: FromTimer, id: master } <$ tick
       = pure reqs
 
