@@ -17,7 +17,7 @@ main = do
     program = do
       let
         drivers =
-          { a: \_ -> pure $ pure 1 :: Event Int
+          { a: \_ -> pure (pure 1 :: Event Int)
           , b: \events ->
               void $ subscribe events \n -> do
                 assert $ n == 1

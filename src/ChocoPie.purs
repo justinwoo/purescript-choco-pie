@@ -10,7 +10,7 @@ import Prim.RowList (class RowToList, Cons, Nil, kind RowList)
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
-import Type.Row (RLProxy(RLProxy))
+import Type.Prelude (RLProxy(..))
 
 runChocoPie :: forall driver sink source
    . ChocoPieRecord source sink driver

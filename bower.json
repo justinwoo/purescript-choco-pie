@@ -12,12 +12,12 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^4.1.0",
-    "purescript-typelevel-prelude": "^4.0.0",
-    "purescript-record": "^2.0.0",
+    "purescript-prelude": "^4.1.1",
+    "purescript-typelevel-prelude": "^5.0.0",
+    "purescript-record": "^2.0.1",
     "purescript-event": "^1.2.4"
   },
   "devDependencies": {
-    "purescript-assert": "^4.0.0"
+    "purescript-assert": "^4.1.0"
   }
 }
