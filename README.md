@@ -26,8 +26,8 @@ program = runChocoPie main' drivers
       }
 
     drivers ::
-      { a :: Event Unit -> Eff _ (Event Int)
-      , b :: Event Int -> Eff _ Unit
+      { a :: Event Unit -> Effect (Event Int)
+      , b :: Event Int -> Effect Unit
       }
     drivers =
       { a: const $ pure (pure 1)
