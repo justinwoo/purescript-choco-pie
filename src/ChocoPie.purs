@@ -19,7 +19,7 @@ runChocoPie :: forall driver sink source
   -> Effect Unit
 runChocoPie = chocoPieItUp
 
-class ChocoPieRecord (source :: # Type) (sink :: # Type) (driver :: # Type)
+class ChocoPieRecord (source :: Row Type) (sink :: Row Type) (driver :: Row Type)
   | source -> sink driver where
   chocoPieItUp :: (Record source -> Record sink) -> (Record driver) -> Effect Unit
 
@@ -41,7 +41,7 @@ instance chocoPieRecord ::
       sinkLP = RLProxy :: RLProxy sinkL
       driverLP = RLProxy :: RLProxy driverL
 
-class MakeSinkProxies (sinkL :: RowList) (bundle' :: # Type) (bundle :: # Type)
+class MakeSinkProxies (sinkL :: RowList Type) (bundle' :: Row Type) (bundle :: Row Type)
   | sinkL -> bundle' bundle where
   makeSinkProxies :: RLProxy sinkL -> Effect (Builder (Record bundle') (Record bundle))
 
@@ -61,8 +61,8 @@ instance makeSinkProxiesNil :: MakeSinkProxies Nil () () where
   makeSinkProxies _ = pure identity
 
 class CallDrivers
-  (driverL :: RowList) (driver :: # Type)
-  (bundle :: # Type) (source' :: # Type) (source :: # Type)
+  (driverL :: RowList Type) (driver :: Row Type)
+  (bundle :: Row Type) (source' :: Row Type) (source :: Row Type)
   | driverL -> driver bundle source' source where
   callDrivers :: RLProxy driverL -> Record driver -> Record bundle -> Effect (Builder (Record source') (Record source))
 
@@ -88,7 +88,7 @@ instance callDriversNil :: CallDrivers Nil driver bundle () () where
   callDrivers _ _ _ = pure identity
 
 class ReplicateMany
-  (sinkL :: RowList) (sink :: # Type) (bundle :: # Type)
+  (sinkL :: RowList Type) (sink :: Row Type) (bundle :: Row Type)
   | sinkL -> sink bundle where
   replicateMany :: RLProxy sinkL -> Record sink -> Record bundle -> Effect Unit
 
